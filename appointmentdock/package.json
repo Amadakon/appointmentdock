@@ -1,0 +1,13 @@
+{
+  "name": "appointmentdock",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Multi-tenant appointment booking platform",
+  "type": "module",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node --disable-warning=ExperimentalWarning src/server.js",
+    "dev": "SEED_DEMO=true PLATFORM_ADMIN_EMAIL=admin@example.com PLATFORM_ADMIN_PASSWORD=devpassword123 node --disable-warning=ExperimentalWarning --watch src/server.js",
+    "test": "node --disable-warning=ExperimentalWarning --test test/*.test.js"
+  }
+}

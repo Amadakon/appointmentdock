@@ -1,0 +1,64 @@
+name: appointmentdock
+
+# AppointmentDock on the shared Traefik (root_default network).
+# Builds straight from the GitHub repo (public), so a redeploy = push + rebuild.
+# Settings come from the project environment (.env) in the Hostinger Docker manager:
+#   APP_DOMAIN, APP_PATH, PLATFORM_ADMIN_EMAIL, SETUP_TOKEN, SEED_DEMO,
+#   RESEND_API_KEY, EMAIL_FROM, TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN,
+#   TWILIO_MESSAGING_SERVICE_SID, TWILIO_FROM
+services:
+  app:
+    build:
+      context: ${GIT_CONTEXT:-https://github.com/Amadakon/appointmentdock.git#main}
+    image: appointmentdock:latest
+    restart: unless-stopped
+    init: true
+    environment:
+      NODE_ENV: production
+      PORT: "8080"
+      DATA_DIR: /data
+      APP_PATH: ${APP_PATH:-/appointmentdock}
+      APP_URL: https://${APP_DOMAIN}${APP_PATH:-/appointmentdock}
+      COOKIE_SECURE: "true"
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:-}
+      SETUP_TOKEN: ${SETUP_TOKEN:-}
+      SEED_DEMO: ${SEED_DEMO:-false}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-}
+      TWILIO_ACCOUNT_SID: ${TWILIO_ACCOUNT_SID:-}
+      TWILIO_AUTH_TOKEN: ${TWILIO_AUTH_TOKEN:-}
+      TWILIO_MESSAGING_SERVICE_SID: ${TWILIO_MESSAGING_SERVICE_SID:-}
+      TWILIO_FROM: ${TWILIO_FROM:-}
+    volumes:
+      - appointmentdock_data:/data
+    networks:
+      - proxy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=root_default
+      - traefik.http.routers.appointmentdock.rule=Host(`${APP_DOMAIN}`) && (Path(`${APP_PATH:-/appointmentdock}`) || PathPrefix(`${APP_PATH:-/appointmentdock}/`))
+      - traefik.http.routers.appointmentdock.entrypoints=websecure
+      - traefik.http.routers.appointmentdock.tls=true
+      - traefik.http.routers.appointmentdock.tls.certresolver=mytlschallenge
+      - traefik.http.routers.appointmentdock.priority=110
+      - traefik.http.routers.appointmentdock.middlewares=appointmentdock-strip
+      - traefik.http.middlewares.appointmentdock-strip.stripprefix.prefixes=${APP_PATH:-/appointmentdock}
+      - traefik.http.services.appointmentdock.loadbalancer.server.port=8080
+    logging:
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  proxy:
+    external: true
+    name: root_default
+
+volumes:
+  appointmentdock_data:
